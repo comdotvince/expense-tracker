@@ -1,22 +1,8 @@
 [
   {
-    "description": "coffee",
-    "amount": 5,
-    "date": "6/6/2025"
-  },
-  {
-    "description": "lunch",
-    "amount": 15,
-    "date": "6/6/2025"
-  },
-  {
-    "description": "groceries",
-    "amount": 40,
-    "date": "6/6/2025"
-  },
-  {
-    "description": "movie",
-    "amount": 12,
-    "date": "6/6/2025"
+    "id": 0,
+    "description": "dinner",
+    "amount": 50,
+    "date": "7/17/2025"
   }
 ]

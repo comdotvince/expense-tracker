@@ -8,8 +8,6 @@ const program = new Command();
 
 const filePath = "data.json";
 
-// store expenses in memory for simplicity
-
 program
   .name("expense-tracker")
   .description("A CLI tool to track expenses")
@@ -18,9 +16,14 @@ program
 // for Adding new expense
 program
   .command("add")
+  .description("Add a new expense")
   .requiredOption("--description <desc>", "Expense description")
   .requiredOption("--amount <number>", "Expense amount", parseFloat)
   .action(async (options) => {
+    if (isNaN(options.amount) || options.amount <= 0) {
+      console.error("Invalid amount. Please provide a positive number.");
+      return;
+    }
     // Read existing data
     const file = await readFile(filePath, "utf8");
     const json = JSON.parse(file);
@@ -48,6 +51,7 @@ program
     }
   });
 
+// for Listing all expenses
 program
   .command("list")
   .description("List all expenses")
@@ -58,36 +62,51 @@ program
     data.forEach((expense) => {
       if (!printed) {
         console.log(
-          `${"description".padEnd(20)} ${"amount".padEnd(20)} ${"date".padEnd(
+          `${"id".padEnd(20)} ${"description".padEnd(20)} ${"amount".padEnd(
             20
-          )}`
+          )} ${"date".padEnd(20)}`
         );
       }
 
       console.log(
-        `${expense.description.padEnd(20)} ${expense.amount
+        `${expense.id.toString().padEnd(20)} ${expense.description.padEnd(
+          20
+        )} ${expense.amount.toString().padEnd(20)} ${expense.date
           .toString()
-          .padEnd(20)} ${expense.date.toString().padEnd(20)}`
+          .padEnd(20)}`
       );
 
       printed = true;
     });
   });
 
+// for Deleting an expense
 program
   .command("delete")
+  .requiredOption("--id <number>", "Expense ID to delete", parseInt)
   .description("Delete an expense")
-  .action(async () => {
+  .action(async (idNumber) => {
+    const id = idNumber.id;
+
+    if (isNaN(id) || id < 0) {
+      console.error("Invalid ID. Please provide a valid positive number.");
+      return;
+    }
+
+    console.log(`Deleting expense with ID: ${id}`);
     const data = JSON.parse(await readFile("data.json", "utf8"));
+
+    const deletedExpense = data.find((expense) => expense.id === id);
+    if (!deletedExpense) {
+      console.error(`Expense with ID ${id} not found.`);
+      return;
+    }
+    const updatedData = data.filter((expense) => expense.id !== id);
+    await writeFile("data.json", JSON.stringify(updatedData, null, 2));
+    console.log(`Expense with ID ${id} deleted successfully.`);
   });
 
-program
-  .command("total")
-  .description("Show total expenses")
-  .action(() => {
-    console.log("Total expenses logic goes here");
-  });
-
+// for Showing a summary of expenses
 program
   .command("summary")
   .description("Show a summary of expenses")
