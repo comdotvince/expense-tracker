@@ -2,12 +2,11 @@
 
 import { Command } from "commander";
 import { writeFile, readFile } from "fs/promises";
+import { type } from "os";
 
 const program = new Command();
 
 const filePath = "data.json";
-
-let expenseId = 0;
 
 // store expenses in memory for simplicity
 
@@ -22,8 +21,12 @@ program
   .requiredOption("--description <desc>", "Expense description")
   .requiredOption("--amount <number>", "Expense amount", parseFloat)
   .action(async (options) => {
+    // Read existing data
+    const file = await readFile(filePath, "utf8");
+    const json = JSON.parse(file);
+    const expenseId = json.length;
     const expense = {
-      id: expenseId++,
+      id: expenseId,
       description: options.description,
       amount: options.amount,
       date: new Date().toLocaleDateString(),
@@ -39,6 +42,7 @@ program
 
       // Write updated data back
       await writeFile(filePath, JSON.stringify(json, null, 2));
+      console.log(`Expense added successfully (ID: ${expenseId})`);
     } catch (err) {
       console.error("Error reading or writing file:", err);
     }
@@ -84,9 +88,40 @@ program
     console.log("Total expenses logic goes here");
   });
 
-// Show help if no command
-if (!process.argv.slice(2).length) {
-  program.outputHelp();
-}
+program
+  .command("summary")
+  .description("Show a summary of expenses")
+  .option("--month <month>", "Filter by month (1-12)")
+  .action(async (cmd) => {
+    const data = JSON.parse(await readFile("data.json", "utf8"));
+
+    let month = cmd.month;
+
+    if (data.length === 0) {
+      console.log("No expenses found.");
+      return;
+    }
+    if (month) {
+      month = parseInt(month, 10);
+      const filteredData = data.filter((expense) => {
+        const expenseMonth = new Date(expense.date).getMonth() + 1; // getMonth() is zero-based
+        return expenseMonth === month;
+      });
+
+      if (filteredData.length === 0) {
+        console.log(`No expenses found for month ${month}.`);
+        return;
+      } else {
+        const total = filteredData.reduce(
+          (sum, expense) => sum + expense.amount,
+          0
+        );
+        console.log(`Total expenses for month ${month}: $${total}`);
+      }
+    } else {
+      const total = data.reduce((sum, expense) => sum + expense.amount, 0);
+      console.log(`Total expenses: $${total}`);
+    }
+  });
 
 program.parse();
